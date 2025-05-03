@@ -56,6 +56,9 @@ require_once(PPCC_PLUGIN_DIR . 'includes/ppcc-paypal-request-logger.php');
 // Include PayPal direct API hooks
 require_once(PPCC_PLUGIN_DIR . 'includes/paypal-hooks.php');
 
+// Include PayPal API integration
+require_once(PPCC_PLUGIN_DIR . 'includes/class-ppcc-paypal-api.php');
+
 // Load plugin text domain
 function ppcc_load_textdomain() {
     load_plugin_textdomain('ppcc-pro', false, dirname(plugin_basename(__FILE__)) . '/languages');

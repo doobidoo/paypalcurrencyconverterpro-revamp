@@ -134,7 +134,7 @@ class PPCC_Checkout {
             }
             
             // Skip if not on checkout or PayPal not selected
-            if ( ! is_checkout() || ! $this->is_paypal_selected() ) {
+            if ( ! is_checkout() && ! wp_doing_ajax() ) {
                 return;
             }
             
@@ -162,17 +162,18 @@ class PPCC_Checkout {
                 return;
             }
             
-            // Verify cart properties exist
-            if (!property_exists($cart, 'cart_contents_total') || 
-                ($shipping_handling_fee && !property_exists($cart, 'shipping_total'))) {
-                ppcc_log('Missing required cart properties in add_handling_fee', 'error');
-                return;
-            }
+            // Get cart totals safely
+            $cart_contents_total = method_exists($cart, 'get_cart_contents_total') ? $cart->get_cart_contents_total() : 0;
+            $shipping_total = method_exists($cart, 'get_shipping_total') ? $cart->get_shipping_total() : 0;
+            
+            // Log cart values for debugging
+            ppcc_log('Cart values in add_handling_fee: cart_contents=' . $cart_contents_total . 
+                     ', shipping=' . $shipping_total, 'debug');
             
             // Check lower threshold
             if ( isset( $this->settings['lower_treshold'] ) && $this->settings['lower_treshold'] === 'on' ) {
                 $lower_threshold_amount = isset( $this->settings['lower_treshold_amount'] ) ? floatval( $this->settings['lower_treshold_amount'] ) : 0;
-                if ( $cart->cart_contents_total > $lower_threshold_amount ) {
+                if ( $cart_contents_total > $lower_threshold_amount ) {
                     return;
                 }
             }
@@ -180,15 +181,15 @@ class PPCC_Checkout {
             // Check upper threshold
             if ( isset( $this->settings['upper_treshold'] ) && $this->settings['upper_treshold'] === 'on' ) {
                 $upper_threshold_amount = isset( $this->settings['upper_treshold_amount'] ) ? floatval( $this->settings['upper_treshold_amount'] ) : 0;
-                if ( $cart->cart_contents_total < $upper_threshold_amount ) {
+                if ( $cart_contents_total < $upper_threshold_amount ) {
                     return;
                 }
             }
             
             // Calculate handling fee
-            $handling_fee_base = $cart->cart_contents_total;
+            $handling_fee_base = $cart_contents_total;
             if ( $shipping_handling_fee ) {
-                $handling_fee_base += $cart->shipping_total;
+                $handling_fee_base += $shipping_total;
             }
             
             $fee = ( $handling_fee_base * $handling_percentage / 100 ) + $handling_amount;
@@ -205,6 +206,10 @@ class PPCC_Checkout {
             // Add the fee
             if ( $fee != 0 ) {
                 $cart->add_fee( $fee_label, $fee, $handling_taxable );
+                
+                // Store the handling fee in a session variable for use in the PayPal request
+                WC()->session->set('ppcc_handling_fee', $fee);
+                WC()->session->set('ppcc_handling_fee_label', $fee_label);
             }
         } catch (Exception $e) {
             ppcc_log('Exception in add_handling_fee: ' . $e->getMessage(), 'error');

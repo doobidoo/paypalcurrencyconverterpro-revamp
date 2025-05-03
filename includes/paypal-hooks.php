@@ -32,6 +32,11 @@ class PPCC_PayPal_Hooks {
         // Add hook to log any currency conversion issues
         add_filter('woocommerce_order_get_currency', array(__CLASS__, 'log_order_currency'), 10, 2);
         
+        // Hook into PayPal checkout API requests to modify the API payload
+        add_filter('woocommerce_paypal_args', array(__CLASS__, 'modify_paypal_standard_args'), 999);        
+        add_filter('woocommerce_rest_pre_insert_shop_order_object', array(__CLASS__, 'modify_order_currency'), 10, 2);
+        add_filter('http_request_args', array(__CLASS__, 'modify_paypal_api_request'), 999, 2);
+        
         // Add admin notice
         add_action('admin_notices', array(__CLASS__, 'admin_notice'));
         
@@ -250,6 +255,268 @@ class PPCC_PayPal_Hooks {
         echo 'PayPal Target Currency: ' . $target_currency . ', ';
         echo 'Logging Active';
         echo '</div>';
+    }
+    
+    /**
+     * Modify PayPal API request to use the target currency
+     *
+     * @param array $request_args HTTP request arguments
+     * @param string $url Request URL
+     * @return array Modified request arguments
+     */
+    public static function modify_paypal_api_request($request_args, $url) {
+        // Only process PayPal API calls
+        if (strpos($url, 'paypal.com') === false) {
+            return $request_args;
+        }
+
+        // Check if this is a orders API call
+        if (strpos($url, '/v2/checkout/orders') !== false) {
+            // Get PayPal settings
+            $settings = get_ppcc_option('ppcc_settings');
+            if (!is_array($settings) || empty($settings)) {
+                return $request_args;
+            }
+
+            $shop_currency = get_woocommerce_currency();
+            $target_currency = isset($settings['target_currency']) ? $settings['target_currency'] : 'USD';
+            $conversion_rate = isset($settings['conversion_rate']) ? floatval($settings['conversion_rate']) : 1.0;
+
+            // If there's no conversion needed, return the original request
+            if ($shop_currency === $target_currency) {
+                return $request_args;
+            }
+
+            // Log the original request for debugging
+            if (function_exists('ppcc_api_log')) {
+                ppcc_api_log([
+                    'original_request' => $request_args,
+                    'url' => $url,
+                    'shop_currency' => $shop_currency,
+                    'target_currency' => $target_currency,
+                    'conversion_rate' => $conversion_rate
+                ], 'PAYPAL_API_REQUEST_BEFORE_MODIFICATION');
+            }
+
+            // Check if the request has a body
+            if (empty($request_args['body'])) {
+                return $request_args;
+            }
+
+            // Decode the JSON body
+            $body = json_decode($request_args['body'], true);
+            if (!is_array($body)) {
+                return $request_args;
+            }
+
+            // Update the currency and values in the request body
+            if (isset($body['purchase_units']) && is_array($body['purchase_units'])) {
+                foreach ($body['purchase_units'] as &$unit) {
+                    // Get the handling fee from the session
+                    $handling_fee = 0;
+                    if (function_exists('WC') && WC()->session) {
+                        $handling_fee = WC()->session->get('ppcc_handling_fee', 0);
+                    }
+
+                    // Convert the handling fee to the target currency
+                    $converted_handling_fee = round($handling_fee * $conversion_rate, 2);
+
+                    // Update the currency code
+                    if (isset($unit['amount']['currency_code'])) {
+                        $unit['amount']['currency_code'] = $target_currency;
+                    }
+
+                    // Convert the amount value
+                    if (isset($unit['amount']['value'])) {
+                        $original_value = floatval($unit['amount']['value']);
+                        $converted_value = $original_value * $conversion_rate;
+                        $unit['amount']['value'] = number_format($converted_value, 2, '.', '');
+                    }
+
+                    // Update the breakdown if it exists
+                    if (isset($unit['amount']['breakdown'])) {
+                        $breakdown = &$unit['amount']['breakdown'];
+
+                        // Convert each value in the breakdown
+                        foreach ($breakdown as $key => &$item) {
+                            if (isset($item['currency_code'])) {
+                                $item['currency_code'] = $target_currency;
+                            }
+                            if (isset($item['value'])) {
+                                $original_value = floatval($item['value']);
+                                $converted_value = $original_value * $conversion_rate;
+                                $item['value'] = number_format($converted_value, 2, '.', '');
+                            }
+                        }
+
+                        // Add or update the handling fee in the breakdown
+                        if ($converted_handling_fee > 0) {
+                            if (!isset($breakdown['handling'])) {
+                                $breakdown['handling'] = [
+                                    'currency_code' => $target_currency,
+                                    'value' => number_format($converted_handling_fee, 2, '.', '')
+                                ];
+                            } else {
+                                $breakdown['handling']['currency_code'] = $target_currency;
+                                $breakdown['handling']['value'] = number_format($converted_handling_fee, 2, '.', '');
+                            }
+                        }
+                    }
+
+                    // Update any items in the purchase unit
+                    if (isset($unit['items']) && is_array($unit['items'])) {
+                        foreach ($unit['items'] as &$item) {
+                            if (isset($item['unit_amount']['currency_code'])) {
+                                $item['unit_amount']['currency_code'] = $target_currency;
+                            }
+                            if (isset($item['unit_amount']['value'])) {
+                                $original_value = floatval($item['unit_amount']['value']);
+                                $converted_value = $original_value * $conversion_rate;
+                                $item['unit_amount']['value'] = number_format($converted_value, 2, '.', '');
+                            }
+                            if (isset($item['tax']['currency_code'])) {
+                                $item['tax']['currency_code'] = $target_currency;
+                            }
+                            if (isset($item['tax']['value'])) {
+                                $original_value = floatval($item['tax']['value']);
+                                $converted_value = $original_value * $conversion_rate;
+                                $item['tax']['value'] = number_format($converted_value, 2, '.', '');
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Encode the modified body
+            $request_args['body'] = json_encode($body);
+
+            // Log the modified request for debugging
+            if (function_exists('ppcc_api_log')) {
+                ppcc_api_log([
+                    'modified_request' => $request_args,
+                    'converted_body' => $body
+                ], 'PAYPAL_API_REQUEST_AFTER_MODIFICATION');
+            }
+        }
+
+        return $request_args;
+    }
+
+    /**
+     * Modify PayPal Standard arguments
+     *
+     * @param array $args PayPal arguments
+     * @return array Modified arguments
+     */
+    public static function modify_paypal_standard_args($args) {
+        // Get PayPal settings
+        $settings = get_ppcc_option('ppcc_settings');
+        if (!is_array($settings) || empty($settings)) {
+            return $args;
+        }
+
+        $shop_currency = get_woocommerce_currency();
+        $target_currency = isset($settings['target_currency']) ? $settings['target_currency'] : 'USD';
+        $conversion_rate = isset($settings['conversion_rate']) ? floatval($settings['conversion_rate']) : 1.0;
+
+        // If there's no conversion needed, return the original args
+        if ($shop_currency === $target_currency) {
+            return $args;
+        }
+
+        // Log the original args for debugging
+        if (function_exists('ppcc_api_log')) {
+            ppcc_api_log([
+                'original_args' => $args,
+                'shop_currency' => $shop_currency,
+                'target_currency' => $target_currency,
+                'conversion_rate' => $conversion_rate
+            ], 'PAYPAL_STANDARD_ARGS_BEFORE_MODIFICATION');
+        }
+
+        // Change currency
+        $args['currency_code'] = $target_currency;
+
+        // Get the handling fee from the session
+        $handling_fee = 0;
+        if (function_exists('WC') && WC()->session) {
+            $handling_fee = WC()->session->get('ppcc_handling_fee', 0);
+        }
+
+        // Convert the handling fee to the target currency
+        $converted_handling_fee = round($handling_fee * $conversion_rate, 2);
+
+        // Convert amount values
+        $amount_fields = ['amount', 'shipping', 'tax', 'discount_amount'];
+        foreach ($amount_fields as $field) {
+            if (isset($args[$field])) {
+                $args[$field] = number_format(floatval($args[$field]) * $conversion_rate, 2, '.', '');
+            }
+        }
+
+        // Add handling fee
+        if ($converted_handling_fee > 0) {
+            $args['handling'] = number_format($converted_handling_fee, 2, '.', '');
+        }
+
+        // Convert line item amounts
+        foreach ($args as $key => $value) {
+            if (preg_match('/^amount_\d+$/', $key)) {
+                $args[$key] = number_format(floatval($value) * $conversion_rate, 2, '.', '');
+            }
+        }
+
+        // Log the modified args for debugging
+        if (function_exists('ppcc_api_log')) {
+            ppcc_api_log([
+                'modified_args' => $args
+            ], 'PAYPAL_STANDARD_ARGS_AFTER_MODIFICATION');
+        }
+
+        return $args;
+    }
+
+    /**
+     * Modify order currency before it's created
+     *
+     * @param WC_Order $order Order object
+     * @param array $request Request data
+     * @return WC_Order Modified order
+     */
+    public static function modify_order_currency($order, $request) {
+        // Only modify if it's a PayPal payment
+        $payment_method = $order->get_payment_method();
+        if (!$payment_method || !function_exists('ppcc_is_paypal_gateway') || !ppcc_is_paypal_gateway($payment_method)) {
+            return $order;
+        }
+
+        // Get PayPal settings
+        $settings = get_ppcc_option('ppcc_settings');
+        if (!is_array($settings) || empty($settings)) {
+            return $order;
+        }
+
+        $shop_currency = get_woocommerce_currency();
+        $target_currency = isset($settings['target_currency']) ? $settings['target_currency'] : 'USD';
+
+        // If there's no conversion needed, return the original order
+        if ($shop_currency === $target_currency) {
+            return $order;
+        }
+
+        // Set the order currency to the target currency
+        $order->set_currency($target_currency);
+
+        // Log the currency change
+        if (function_exists('ppcc_api_log')) {
+            ppcc_api_log([
+                'order_id' => $order->get_id(),
+                'original_currency' => $shop_currency,
+                'new_currency' => $target_currency
+            ], 'ORDER_CURRENCY_MODIFIED');
+        }
+
+        return $order;
     }
 }
 
