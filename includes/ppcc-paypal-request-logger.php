@@ -80,7 +80,7 @@ class PPCC_PayPal_Request_Logger {
      */
     private function init_hooks() {
         // PayPal Standard
-        add_filter('woocommerce_paypal_args', array($this, 'log_paypal_standard_args'), 999999, 1);
+        add_filter('woocommerce_paypal_args', array($this, 'log_paypal_standard_args'), 999999, 2); // Added order as second parameter
         
         // PayPal Express Checkout
         add_filter('woocommerce_paypal_express_checkout_request_body', array($this, 'log_paypal_express_request'), 999999, 1);
@@ -111,15 +111,34 @@ class PPCC_PayPal_Request_Logger {
         $target_currency = isset($this->settings['target_currency']) ? $this->settings['target_currency'] : 'USD';
         $conversion_rate = isset($this->settings['conversion_rate']) ? $this->settings['conversion_rate'] : '1.0';
         
+        // Check non-decimal currency
+        $non_decimal_currency = in_array($target_currency, ['HUF', 'JPY', 'TWD']);
+        
+        // Get proper precision based on non-decimal status
+        $precision = $non_decimal_currency ? 0 : 
+                    (isset($this->settings['precision']) ? $this->settings['precision'] : 2);
+        
+        // Cap precision at 2 for regular currencies
+        if (!$non_decimal_currency && $precision > 2) {
+            $precision = 2;
+        }
+        
         $this->log([
             'shop_currency' => $shop_currency,
             'target_currency' => $target_currency,
             'conversion_rate' => $conversion_rate,
             'meaning' => "1 {$shop_currency} = {$conversion_rate} {$target_currency}",
-            'non_decimal_currency' => in_array($target_currency, ['HUF', 'JPY', 'TWD']),
-            'precision' => isset($this->settings['precision']) ? $this->settings['precision'] : 2,
+            'non_decimal_currency' => $non_decimal_currency,
+            'precision' => $precision,
             'handling_percentage' => isset($this->settings['handling_percentage']) ? $this->settings['handling_percentage'] : 0,
             'handling_amount' => isset($this->settings['handling_amount']) ? $this->settings['handling_amount'] : 0,
+            'example_calculation' => [
+                'amount' => 100,
+                'original_currency' => $shop_currency,
+                'converted_amount' => 100 * $conversion_rate,
+                'converted_currency' => $target_currency,
+                'formatted_amount' => number_format(100 * $conversion_rate, $precision),
+            ],
         ], 'SETTINGS');
         
         // Log supported PayPal currencies
@@ -132,6 +151,8 @@ class PPCC_PayPal_Request_Logger {
         $this->log([
             'paypal_supported_currencies' => $paypal_currencies,
             'is_target_currency_supported' => in_array($target_currency, $paypal_currencies),
+            'shop_currency_is_supported' => in_array($shop_currency, $paypal_currencies),
+            'conversion_needed' => ($shop_currency !== $target_currency),
         ], 'PAYPAL_CURRENCIES');
     }
     
@@ -165,10 +186,35 @@ class PPCC_PayPal_Request_Logger {
      * Log PayPal Standard arguments
      *
      * @param array $args PayPal Standard arguments
+     * @param WC_Order|null $order Order object if available
      * @return array Unchanged arguments
      */
-    public function log_paypal_standard_args($args) {
+    public function log_paypal_standard_args($args, $order = null) {
+        // Log basic args
         $this->log($args, 'PAYPAL_STANDARD_ARGS');
+        
+        // If order is available, log more detailed info
+        if ($order) {
+            $order_id = $order->get_id();
+            $order_currency = $order->get_currency();
+            $original_currency = $order->get_meta('_ppcc_original_currency');
+            $original_total = $order->get_meta('_ppcc_original_total');
+            $conversion_rate = $order->get_meta('_ppcc_conversion_rate');
+            
+            // Log conversion details if available
+            if ($original_currency) {
+                $this->log([
+                    'order_id' => $order_id,
+                    'paypal_currency' => isset($args['currency_code']) ? $args['currency_code'] : 'not set',
+                    'order_currency' => $order_currency,
+                    'original_currency' => $original_currency,
+                    'original_total' => $original_total,
+                    'converted_total' => $order->get_total(),
+                    'conversion_rate' => $conversion_rate,
+                    'verification' => $original_total * $conversion_rate,
+                ], 'PAYPAL_ORDER_CONVERSION');
+            }
+        }
         
         // Specifically check for currency issues
         if (isset($args['currency_code'])) {
@@ -229,16 +275,43 @@ class PPCC_PayPal_Request_Logger {
         if (isset($data['purchase_units']) && is_array($data['purchase_units'])) {
             foreach ($data['purchase_units'] as $index => $unit) {
                 if (isset($unit['amount']) && isset($unit['amount']['currency_code'])) {
+                    $currency_code = $unit['amount']['currency_code'];
+                    $value = isset($unit['amount']['value']) ? $unit['amount']['value'] : 'not set';
+                    
                     $this->log([
                         'unit_index' => $index,
-                        'currency_code' => $unit['amount']['currency_code'],
-                        'value' => isset($unit['amount']['value']) ? $unit['amount']['value'] : 'not set',
+                        'currency_code' => $currency_code,
+                        'value' => $value,
                     ], 'PURCHASE_UNIT_CURRENCY');
                     
-                    $this->log_currency_check($unit['amount']['currency_code']);
+                    // Check currency
+                    $this->log_currency_check($currency_code);
                     
+                    // Check amount format
                     if (isset($unit['amount']['value'])) {
-                        $this->log_amount_check($unit['amount']['value'], $unit['amount']['currency_code']);
+                        $this->log_amount_check($unit['amount']['value'], $currency_code);
+                    }
+                    
+                    // Also check breakdown values if available
+                    if (isset($unit['amount']['breakdown']) && is_array($unit['amount']['breakdown'])) {
+                        foreach ($unit['amount']['breakdown'] as $component => $component_data) {
+                            if (isset($component_data['value'])) {
+                                $this->log_amount_check($component_data['value'], $currency_code, 'breakdown_' . $component);
+                            }
+                        }
+                    }
+                }
+                
+                // Check item values
+                if (isset($unit['items']) && is_array($unit['items'])) {
+                    foreach ($unit['items'] as $item_index => $item) {
+                        if (isset($item['unit_amount']) && isset($item['unit_amount']['value'])) {
+                            $this->log_amount_check(
+                                $item['unit_amount']['value'], 
+                                isset($item['unit_amount']['currency_code']) ? $item['unit_amount']['currency_code'] : $currency_code,
+                                'item_' . $item_index
+                            );
+                        }
                     }
                 }
             }
@@ -256,11 +329,21 @@ class PPCC_PayPal_Request_Logger {
      */
     public function log_paypal_order_info($order_info, $wc_order) {
         // Basic order info
+        $order_id = $wc_order->get_id();
+        $order_currency = $wc_order->get_currency();
+        $original_currency = $wc_order->get_meta('_ppcc_original_currency');
+        $original_total = $wc_order->get_meta('_ppcc_original_total');
+        $conversion_rate = $wc_order->get_meta('_ppcc_conversion_rate');
+        
         $this->log([
-            'order_id' => $wc_order->get_id(),
-            'order_currency' => $wc_order->get_currency(),
+            'order_id' => $order_id,
+            'order_currency' => $order_currency,
             'order_total' => $wc_order->get_total(),
             'payment_method' => $wc_order->get_payment_method(),
+            'conversion_applied' => !empty($original_currency),
+            'original_currency' => $original_currency ?: 'none',
+            'original_total' => $original_total ?: 'none',
+            'conversion_rate' => $conversion_rate ?: 'none',
         ], 'WC_ORDER_INFO');
         
         // Full PayPal order info
@@ -285,6 +368,68 @@ class PPCC_PayPal_Request_Logger {
                 'body' => isset($args['body']) ? $args['body'] : '',
                 'timeout' => isset($args['timeout']) ? $args['timeout'] : 5,
             ], 'HTTP_REQUEST_TO_PAYPAL');
+            
+            // Check for currency info in request body
+            if (isset($args['body'])) {
+                // Try to decode JSON body
+                $body = $args['body'];
+                $json_body = null;
+                
+                if (is_string($body) && 0 === strpos(trim($body), '{')) {
+                    $json_body = json_decode($body, true);
+                }
+                
+                if (is_array($json_body)) {
+                    // Check for currency in JSON body
+                    if (isset($json_body['currency_code'])) {
+                        $this->log_currency_check($json_body['currency_code']);
+                    }
+                    
+                    // Check for purchase units
+                    if (isset($json_body['purchase_units']) && is_array($json_body['purchase_units'])) {
+                        foreach ($json_body['purchase_units'] as $unit) {
+                            if (isset($unit['amount']) && isset($unit['amount']['currency_code'])) {
+                                $this->log_currency_check($unit['amount']['currency_code']);
+                                
+                                if (isset($unit['amount']['value'])) {
+                                    $this->log_amount_check($unit['amount']['value'], $unit['amount']['currency_code']);
+                                }
+                            }
+                        }
+                    }
+                } else if (is_string($body)) {
+                    // Check for common currency parameters in string bodies
+                    $currency_params = [
+                        'CURRENCYCODE', 'PAYMENTREQUEST_0_CURRENCYCODE', 'currency_code', 'currencyCode'
+                    ];
+                    
+                    foreach ($currency_params as $param) {
+                        if (preg_match('/[&\?]' . $param . '=([A-Z]{3})/', $body, $matches)) {
+                            $this->log_currency_check($matches[1]);
+                        }
+                    }
+                    
+                    // Check for amount parameters
+                    $amount_params = [
+                        'AMT', 'PAYMENTREQUEST_0_AMT', 'amount', 'value'
+                    ];
+                    
+                    foreach ($amount_params as $param) {
+                        if (preg_match('/[&\?]' . $param . '=([\d\.]+)/', $body, $matches)) {
+                            // Try to find the associated currency
+                            $currency = '';
+                            foreach ($currency_params as $currency_param) {
+                                if (preg_match('/[&\?]' . $currency_param . '=([A-Z]{3})/', $body, $currency_matches)) {
+                                    $currency = $currency_matches[1];
+                                    break;
+                                }
+                            }
+                            
+                            $this->log_amount_check($matches[1], $currency);
+                        }
+                    }
+                }
+            }
         }
         return $args;
     }
@@ -342,6 +487,43 @@ class PPCC_PayPal_Request_Logger {
                 'body' => $body,
                 'cookies' => wp_remote_retrieve_cookies($response),
             ], $log_level . '_FROM_PAYPAL');
+            
+            // Check for PayPal's special currency error messages
+            if (is_string($body)) {
+                if (stripos($body, 'CURRENCY_NOT_SUPPORTED') !== false) {
+                    $this->log([
+                        'error_type' => 'CURRENCY_NOT_SUPPORTED',
+                        'response_body' => $body,
+                        'url' => $url,
+                    ], 'CURRENCY_ERROR_DETECTED', 'error');
+                } else if (stripos($body, 'DECIMALS_NOT_SUPPORTED') !== false) {
+                    $this->log([
+                        'error_type' => 'DECIMALS_NOT_SUPPORTED',
+                        'response_body' => $body,
+                        'url' => $url,
+                    ], 'DECIMAL_ERROR_DETECTED', 'error');
+                }
+                
+                // Also check for other common PayPal errors
+                $error_codes = [
+                    'VALIDATION_ERROR',
+                    'INTERNAL_SERVICE_ERROR',
+                    'INVALID_REQUEST',
+                    'MALFORMED_REQUEST',
+                    'UNSUPPORTED_PARAMETER',
+                    'INVALID_PARAMETER_VALUE',
+                ];
+                
+                foreach ($error_codes as $error_code) {
+                    if (stripos($body, $error_code) !== false) {
+                        $this->log([
+                            'error_type' => $error_code,
+                            'response_body' => $body,
+                            'url' => $url,
+                        ], 'PAYPAL_API_ERROR_DETECTED', 'error');
+                    }
+                }
+            }
         }
         return $response;
     }
@@ -400,6 +582,37 @@ class PPCC_PayPal_Request_Logger {
                                         actions.order.create = function(orderData) {
                                             // Log the order creation data
                                             logToServer('PAYPAL_ORDER_CREATE_DATA', orderData);
+                                            
+                                            // Check for non-decimal currency issues
+                                            var isNonDecimalCurrency = false;
+                                            var hasDecimalValues = false;
+                                            
+                                            if (orderData && orderData.purchase_units) {
+                                                orderData.purchase_units.forEach(function(unit) {
+                                                    if (unit.amount && unit.amount.currency_code) {
+                                                        var currency = unit.amount.currency_code;
+                                                        isNonDecimalCurrency = ['HUF', 'JPY', 'TWD'].indexOf(currency) !== -1;
+                                                        
+                                                        if (isNonDecimalCurrency && unit.amount.value) {
+                                                            var value = parseFloat(unit.amount.value);
+                                                            hasDecimalValues = (value % 1 !== 0);
+                                                            
+                                                            if (hasDecimalValues) {
+                                                                console.error('PayPal DECIMAL ERROR detected - non-decimal currency ' + currency + ' with decimal value: ' + value);
+                                                                logToServer('PAYPAL_DECIMAL_ERROR_DETECTED', {
+                                                                    currency: currency,
+                                                                    value: value,
+                                                                    orderData: orderData
+                                                                });
+                                                                
+                                                                // Fix the issue by rounding
+                                                                unit.amount.value = Math.round(value).toString();
+                                                                console.log('Fixed decimal value: ' + unit.amount.value);
+                                                            }
+                                                        }
+                                                    }
+                                                });
+                                            }
                                             
                                             return originalOrderCreate(orderData)
                                                 .then(function(orderId) {
@@ -542,6 +755,15 @@ class PPCC_PayPal_Request_Logger {
                             'order_data' => isset($data['order_data']) ? $data['order_data'] : '',
                             'checkout_info' => isset($log_data['checkout_info']) ? $log_data['checkout_info'] : '',
                         ], 'CURRENCY_ERROR_DETECTED');
+                    } else if (isset($data['error']) && is_string($data['error']) && 
+                        strpos($data['error'], 'DECIMALS_NOT_SUPPORTED') !== false) {
+                        // Found the decimals error! Log specifically
+                        $this->log([
+                            'error_type' => 'DECIMALS_NOT_SUPPORTED',
+                            'error_message' => $data['error'],
+                            'order_data' => isset($data['order_data']) ? $data['order_data'] : '',
+                            'checkout_info' => isset($log_data['checkout_info']) ? $log_data['checkout_info'] : '',
+                        ], 'DECIMAL_ERROR_DETECTED');
                     }
                 }
                 
@@ -608,32 +830,49 @@ class PPCC_PayPal_Request_Logger {
      *
      * @param mixed $amount Amount
      * @param string $currency Currency code
+     * @param string $context Additional context (optional)
      */
-    private function log_amount_check($amount, $currency) {
+    private function log_amount_check($amount, $currency, $context = '') {
         $non_decimal_currencies = array('HUF', 'JPY', 'TWD');
         $is_non_decimal = in_array(strtoupper($currency), $non_decimal_currencies);
         
         $has_decimals = (is_string($amount) && strpos($amount, '.') !== false) || 
                         (is_float($amount) && fmod($amount, 1) !== 0.0);
         
-        $this->log([
+        $is_properly_formatted = !($is_non_decimal && $has_decimals);
+        
+        $log_data = [
             'amount' => $amount,
             'amount_type' => gettype($amount),
             'currency' => $currency,
             'is_non_decimal_currency' => $is_non_decimal,
             'has_decimals' => $has_decimals,
-            'is_properly_formatted' => !($is_non_decimal && $has_decimals),
-        ], ($is_non_decimal && $has_decimals) ? 'AMOUNT_FORMAT_ERROR' : 'AMOUNT_CHECK');
+            'is_properly_formatted' => $is_properly_formatted,
+        ];
+        
+        // Add context if provided
+        if (!empty($context)) {
+            $log_data['context'] = $context;
+        }
+        
+        $this->log($log_data, ($is_non_decimal && $has_decimals) ? 'AMOUNT_FORMAT_ERROR' : 'AMOUNT_CHECK');
         
         // If non-decimal currency has decimals, log error
         if ($is_non_decimal && $has_decimals) {
-            $this->log([
+            $log_data = [
                 'amount' => $amount,
                 'currency' => $currency,
                 'error' => "Non-decimal currency {$currency} should not have decimal places.",
                 'fix' => "Convert {$amount} to integer: " . intval($amount),
                 'expected_format' => intval($amount),
-            ], 'NON_DECIMAL_CURRENCY_ERROR');
+            ];
+            
+            // Add context if provided
+            if (!empty($context)) {
+                $log_data['context'] = $context;
+            }
+            
+            $this->log($log_data, 'NON_DECIMAL_CURRENCY_ERROR');
         }
     }
     
@@ -645,63 +884,63 @@ class PPCC_PayPal_Request_Logger {
      * @param string $level Log level (debug, info, warning, error)
      */
     public function log($data, $context = '', $level = 'info') {
-            try {
-                // Add timestamp
-                $timestamp = date('Y-m-d H:i:s');
-                
-                // Format the log data
-                $log_data = [
-                    'timestamp' => $timestamp,
-                    'request_id' => $this->request_id,
-                    'context' => $context,
-                    'data' => $data,
-                ];
-                
-                // Format as JSON
-                $log_entry = json_encode($log_data, JSON_PRETTY_PRINT);
-                
-                // Determine filename based on context
-                $context_slug = sanitize_title($context);
-                if (strpos(strtolower($context), 'error') !== false || $level === 'error') {
-                    $filename = 'paypal-errors.log';
-                } elseif (strpos($context, 'CURRENCY') !== false) {
-                    $filename = 'paypal-currency.log';
-                } else {
-                    $filename = 'paypal-requests.log';
-                }
-                
-                // Full path to the log file
-                $log_file = $this->log_dir . '/' . $filename;
-                
-                // Append to log file
-                file_put_contents($log_file, $log_entry . "\n\n", FILE_APPEND);
-                
-                // If this is an error, also log to WooCommerce logger
-                if (strpos(strtolower($context), 'error') !== false || $level === 'error') {
-                    if (function_exists('wc_get_logger')) {
-                        $logger = wc_get_logger();
-                        $logger->error($context . ': ' . (is_string($data) ? $data : json_encode($data)), ['source' => 'ppcc']);
-                    }
-                }
-                
-                return true;
-            } catch (Exception $e) {
-                // Fallback to error log
-                error_log('PPCC Logger Error: ' . $e->getMessage());
-                error_log('Failed to log: ' . $context . ' - ' . (is_string($data) ? $data : json_encode($data)));
-                
-                return false;
+        try {
+            // Add timestamp
+            $timestamp = date('Y-m-d H:i:s');
+            
+            // Format the log data
+            $log_data = [
+                'timestamp' => $timestamp,
+                'request_id' => $this->request_id,
+                'context' => $context,
+                'data' => $data,
+            ];
+            
+            // Format as JSON
+            $log_entry = json_encode($log_data, JSON_PRETTY_PRINT);
+            
+            // Determine filename based on context
+            $context_slug = sanitize_title($context);
+            if (strpos(strtolower($context), 'error') !== false || $level === 'error') {
+                $filename = 'paypal-errors.log';
+            } elseif (strpos($context, 'CURRENCY') !== false) {
+                $filename = 'paypal-currency.log';
+            } else {
+                $filename = 'paypal-requests.log';
             }
+            
+            // Full path to the log file
+            $log_file = $this->log_dir . '/' . $filename;
+            
+            // Append to log file
+            file_put_contents($log_file, $log_entry . "\n\n", FILE_APPEND);
+            
+            // If this is an error, also log to WooCommerce logger
+            if (strpos(strtolower($context), 'error') !== false || $level === 'error') {
+                if (function_exists('wc_get_logger')) {
+                    $logger = wc_get_logger();
+                    $logger->error($context . ': ' . (is_string($data) ? $data : json_encode($data)), ['source' => 'ppcc']);
+                }
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            // Fallback to error log
+            error_log('PPCC Logger Error: ' . $e->getMessage());
+            error_log('Failed to log: ' . $context . ' - ' . (is_string($data) ? $data : json_encode($data)));
+            
+            return false;
         }
     }
+}
 
-    // Initialize the logger
-    function ppcc_init_paypal_request_logger() {
-        return PPCC_PayPal_Request_Logger::instance();
-    }
+// Initialize the logger
+function ppcc_init_paypal_request_logger() {
+    return PPCC_PayPal_Request_Logger::instance();
+}
 
-    // Global function to access the logger
-    function ppcc_api_log($data, $context = '', $level = 'info') {
-        $logger = PPCC_PayPal_Request_Logger::instance();
-        return $logger->log($data, $context, $level);
-    }
+// Global function to access the logger
+function ppcc_api_log($data, $context = '', $level = 'info') {
+    $logger = PPCC_PayPal_Request_Logger::instance();
+    return $logger->log($data, $context, $level);
+}

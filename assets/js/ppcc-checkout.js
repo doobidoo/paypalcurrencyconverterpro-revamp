@@ -188,14 +188,14 @@
             
             // Check if we have non-decimal currency
             var isNonDecimalCurrency = ['HUF', 'JPY', 'TWD'].indexOf(ppcc_data.target_currency) !== -1;
-            var decimals = isNonDecimalCurrency ? 0 : parseInt(ppcc_data.decimals || 2);
+            var decimals = isNonDecimalCurrency ? 0 : (parseInt(ppcc_data.decimals || 2) || 2);
             
-            // Convert to target currency - standard direct multiplication by conversion rate
+            // Direct multiplication - this is the standard currency conversion formula
             // Debug the conversion rates
             console.log('Conversion calculation', {
-                'Amount': cartTotal,
                 'Rate': ppcc_data.conversion_rate,
-                'Result': cartTotal * ppcc_data.conversion_rate
+                'Decimals': decimals,
+                'Is non-decimal currency': isNonDecimalCurrency
             });
             
             // Apply direct multiplication - this is the standard currency conversion formula
@@ -227,6 +227,13 @@
             $('.ppcc-handling-total').html(formattedHandlingTotal);
             $('.ppcc-tax-total').html(formattedTaxTotal);
             $('.ppcc-order-total').html(formattedOrderTotal);
+            
+            // Also update shadow elements for later use
+            $('.ppcc-shadow-cart-total').html(formattedCartTotal);
+            $('.ppcc-shadow-shipping-total').html(formattedShippingTotal);
+            $('.ppcc-shadow-handling-total').html(formattedHandlingTotal);
+            $('.ppcc-shadow-tax-total').html(formattedTaxTotal);
+            $('.ppcc-shadow-order-total').html(formattedOrderTotal);
         },
         
         // Parse price from formatted string
@@ -252,10 +259,16 @@
         
         // Format price with decimal precision
         formatPrice: function(price, decimals) {
+            if (typeof decimals !== 'number') {
+                decimals = 2; // Default to 2 decimals if not specified
+            }
+            
             // For currencies that don't support decimals, ensure we return an integer
             if (decimals === 0) {
                 return Math.round(price);
             }
+            
+            // Format with specified precision
             return parseFloat(price.toFixed(decimals));
         },
         
@@ -264,7 +277,7 @@
             if (typeof ppcc_data !== 'undefined') {
                 var symbol = ppcc_data.currency_symbol || currency;
                 var isNonDecimalCurrency = ['HUF', 'JPY', 'TWD'].indexOf(currency) !== -1;
-                var decimals = isNonDecimalCurrency ? 0 : (ppcc_data.decimals || 2);
+                var decimals = isNonDecimalCurrency ? 0 : (parseInt(ppcc_data.decimals || 2) || 2);
                 var thousand_separator = ppcc_data.thousand_separator || ',';
                 var decimal_separator = ppcc_data.decimal_separator || '.';
                 
@@ -372,6 +385,46 @@
                                         // Quick check if we're using a non-decimal currency
                                         var isNonDecimalCurrency = ['HUF', 'JPY', 'TWD'].indexOf(ppcc_data.target_currency) !== -1;
                                         console.log('Is non-decimal currency:', isNonDecimalCurrency);
+                                    }
+                                    
+                                    // Override the actions.order.create method to ensure no decimals
+                                    if (isNonDecimalCurrency && actions && actions.order && actions.order.create) {
+                                        var originalCreateMethod = actions.order.create;
+                                        actions.order.create = function(orderData) {
+                                            // Ensure all monetary values are integers for non-decimal currencies
+                                            if (orderData && orderData.purchase_units) {
+                                                orderData.purchase_units.forEach(function(unit) {
+                                                    // Fix amount.value
+                                                    if (unit.amount && unit.amount.value) {
+                                                        unit.amount.value = Math.round(parseFloat(unit.amount.value)).toString();
+                                                    }
+                                                    
+                                                    // Fix amount breakdown items
+                                                    if (unit.amount && unit.amount.breakdown) {
+                                                        for (var key in unit.amount.breakdown) {
+                                                            if (unit.amount.breakdown[key] && unit.amount.breakdown[key].value) {
+                                                                unit.amount.breakdown[key].value = Math.round(parseFloat(unit.amount.breakdown[key].value)).toString();
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    // Fix item amounts
+                                                    if (unit.items && Array.isArray(unit.items)) {
+                                                        unit.items.forEach(function(item) {
+                                                            if (item.unit_amount && item.unit_amount.value) {
+                                                                item.unit_amount.value = Math.round(parseFloat(item.unit_amount.value)).toString();
+                                                            }
+                                                            if (item.tax && item.tax.value) {
+                                                                item.tax.value = Math.round(parseFloat(item.tax.value)).toString();
+                                                            }
+                                                        });
+                                                    }
+                                                });
+                                            }
+                                            
+                                            console.log('Processed PayPal order data for non-decimal currency', orderData);
+                                            return originalCreateMethod(orderData);
+                                        };
                                     }
                                     
                                     // Call the original createOrder function
