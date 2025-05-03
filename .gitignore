@@ -1,0 +1,57 @@
+# Operating System files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE & Editor folders
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.komodoproject
+.komodotools/
+nbproject/
+.project
+.settings/
+.buildpath
+
+# Dependency directories
+vendor/
+node_modules/
+
+# Composer files
+composer.phar
+composer.lock
+
+# NPM files
+package-lock.json
+
+# WordPress test environment
+wp-tests-config.php
+.phpunit.result.cache
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build directories
+build/
+dist/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+
+# Zip files
+*.zip
+
+# Environment files
+.env
+.env.*
+!.env.example

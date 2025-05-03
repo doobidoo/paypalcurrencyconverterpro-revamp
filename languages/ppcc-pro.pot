@@ -1,0 +1,669 @@
+# Copyright (C) 2025 Intelligent-IT
+# This file is distributed under the Codecanyon Regular License.
+msgid ""
+msgstr ""
+"Project-Id-Version: PayPal Currency Converter PRO for WooCommerce 4.0.0\n"
+"Report-Msgid-Bugs-To: https://codecanyon.net/user/intelligent-it\n"
+"POT-Creation-Date: 2025-04-30 00:00:00+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2025-04-30 00:00:00+00:00\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+
+#: includes/class-ppcc-admin.php:373
+msgid "PayPal Currency Converter PRO"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:376
+msgid "Settings saved successfully."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:382
+msgid "Settings have been reset to default values."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:391
+msgid "General Settings"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:392
+msgid "Exchange Rates"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:393
+msgid "Handling Fees"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:394
+msgid "Order Processing"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:395
+msgid "Advanced"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:396
+msgid "Help & Info"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:402
+msgid "Configure the basic settings for currency conversion."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:406
+msgid "Source Currency"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:409
+msgid "Your WooCommerce store currency. This cannot be changed here."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:413
+msgid "Target Currency"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:419
+msgid "Select the target currency for PayPal payments."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:423
+msgid "Custom Currency"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:426
+msgid "Use custom currency"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:428
+msgid "Enable this to use a custom currency in your store."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:432
+msgid "Currency Code:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:434
+msgid "Enter a 3-letter ISO currency code."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:438
+msgid "Currency Symbol:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:442
+msgid "Currency Name:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:449
+msgid "Conversion Rate"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:452
+msgid "Fetch Current Rate"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:456
+msgid "Current conversion rate: 1 %s = %s %s"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:463
+msgid "Last updated:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:470
+msgid "Precision"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:478
+msgid "Select the decimal precision for the conversion rate."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:486
+msgid "Exchange Rate Providers"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:487
+msgid "Select an exchange rate provider and configure automatic updates."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:491
+msgid "Exchange Rate Provider"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:498
+msgid "Custom Exchange Rate"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:500
+msgid "Use the manually entered conversion rate."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:505
+msgid "Currency Converter API"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:508
+msgid "API Key"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:510
+msgid "Pro API"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:512
+msgid "Get your API key at"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:519
+msgid "Fixer.io (European Central Bank)"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:533
+msgid "Open Exchange Rates"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:535
+msgid "App ID"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:547
+msgid "Xignite"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:549
+msgid "API Token"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:561
+msgid "Currency Layer API"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:563
+msgid "Access Key"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:575
+msgid "Custom API"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:577
+msgid "Use a custom API defined in ppcc_custom_api.php file."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:585
+msgid "Automatic Updates"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:588
+msgid "Enable automatic exchange rate updates"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:590
+msgid "When enabled, the exchange rate will be automatically updated based on the schedule."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:595
+msgid "Logging"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:598
+msgid "Enable logging of exchange rate updates"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:600
+msgid "When enabled, logs will be written to the WooCommerce log file and email notifications will be sent."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:605
+msgid "AJAX URL for Cron Job"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:608
+msgid "You can use this URL with an external cron job service to update exchange rates."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:613
+msgid "WordPress Cron Hook"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:616
+msgid "You can use this hook with a WordPress cron plugin."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:624
+msgid "Handling Fees"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:625
+msgid "Configure handling fees and thresholds."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:629
+msgid "Percentage Fee"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:632
+msgid "Add a percentage-based handling fee (or discount with negative values)."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:637
+msgid "Fixed Fee"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:641
+msgid "Add a fixed handling fee (or discount with negative values)."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:646
+msgid "Fee Title"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:648
+msgid "The title for the handling fee as displayed to customers."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:653
+msgid "Apply to Shipping"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:656
+msgid "Include shipping cost in percentage calculation"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:658
+msgid "When enabled, the percentage handling fee will also be applied to shipping costs."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:663
+msgid "Taxable"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:666
+msgid "Apply taxes to handling fee"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:668
+msgid "When enabled, taxes will be applied to the handling fee."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:675
+msgid "Order Processing"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:676
+msgid "Configure how orders are processed after payment."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:680
+msgid "Auto-Complete Virtual Orders"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:683
+msgid "Automatically complete orders containing only virtual products"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:685
+msgid "When enabled, orders with only virtual products will be automatically marked as completed after payment."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:690
+msgid "Auto-Process Standard Orders"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:693
+msgid "Automatically process orders containing physical products"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:695
+msgid "When enabled, orders with physical products will be automatically marked as processing after payment."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:700
+msgid "Suppress On-Hold Emails"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:703
+msgid "Suppress the order on-hold email notifications for PayPal orders"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:705
+msgid "When enabled, on-hold email notifications for PayPal orders will be suppressed."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:710
+msgid "Email Order Completed Note"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:713
+msgid "Add conversion details to order emails"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:715
+msgid "When enabled, conversion details will be added to order emails."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:720
+msgid "Email Note Template"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:723
+msgid "Template for the conversion note in emails. Available placeholders:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:724
+msgid "Conversion rate"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:725
+msgid "Target currency"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:726
+msgid "Original currency"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:727
+msgid "Converted total"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:728
+msgid "Handling percentage"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:729
+msgid "Handling amount"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:737
+msgid "Advanced Settings"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:738
+msgid "Configure advanced settings for the plugin."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:742
+msgid "Payment Gateway Integration"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:744
+msgid "PayPal Currency Converter PRO 4.0 works with the following PayPal gateways:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:753
+msgid "The plugin automatically detects these gateways and applies currency conversion."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:758
+msgid "Plugin Data"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:760
+msgid "Export Settings"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:761
+msgid "Reset to Defaults"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:762
+msgid "Export your settings or reset them to default values."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:767
+msgid "Debug Mode"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:770
+msgid "Enable debug mode"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:772
+msgid "When enabled, detailed logs will be written to help troubleshoot any issues."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:778
+msgid "Keep Data on Uninstall"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:781
+msgid "Keep plugin settings when uninstalling"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:783
+msgid "When enabled, your settings will be preserved if you uninstall the plugin. Useful if you plan to reinstall later."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:791
+msgid "Help & Information"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:794
+msgid "About PayPal Currency Converter PRO"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:795
+msgid "PayPal Currency Converter PRO for WooCommerce 4.0 is a completely revamped version that converts your orders to PayPal-supported currencies during checkout."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:796
+msgid "This approach ensures compatibility with PayPal's API changes and provides a more reliable payment experience."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:798
+msgid "Version:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:799
+msgid "Author:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:800
+msgid "Website:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:805
+msgid "How It Works"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:807
+msgid "When a customer selects PayPal as their payment method, the plugin converts the order to the target currency."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:808
+msgid "The original currency and amount are stored in the order metadata for reference."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:809
+msgid "The customer is sent to PayPal with the converted currency and amount."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:810
+msgid "After payment, the order is processed according to your settings."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:815
+msgid "Key Features"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:817
+msgid "Convert any currency to PayPal-supported currencies"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:818
+msgid "Support for custom currencies"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:819
+msgid "Multiple exchange rate providers"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:820
+msgid "Automatic exchange rate updates"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:821
+msgid "Handling fees with percentage and fixed amounts"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:822
+msgid "Order status management"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:823
+msgid "Detailed currency conversion information"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:828
+msgid "Support"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:829
+msgid "For support, please contact us through CodeCanyon."
+msgstr ""
+
+#: includes/class-ppcc-admin.php:830
+msgid "Get Support"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:835
+msgid "System Information"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:839
+msgid "WordPress Version:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:843
+msgid "WooCommerce Version:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:847
+msgid "PHP Version:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:851
+msgid "cURL Enabled:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:852
+msgid "Yes"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:852
+msgid "No"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:855
+msgid "Plugin Version:"
+msgstr ""
+
+#: includes/class-ppcc-admin.php:864
+msgid "Save Changes"
+msgstr ""
+
+#: includes/class-ppcc-checkout.php:136
+msgid "Your order will be processed in %s"
+msgstr ""
+
+#: includes/class-ppcc-checkout.php:144
+msgid "Cart Total:"
+msgstr ""
+
+#: includes/class-ppcc-checkout.php:149
+msgid "Shipping Total:"
+msgstr ""
+
+#: includes/class-ppcc-checkout.php:156
+msgid "Handling Fee:"
+msgstr ""
+
+#: includes/class-ppcc-checkout.php:162
+msgid "Tax Total:"
+msgstr ""
+
+#: includes/class-ppcc-checkout.php:167
+msgid "Order Total:"
+msgstr ""
+
+#: includes/class-ppcc-checkout.php:172
+msgid "Conversion Rate:"
+msgstr ""
+
+#: includes/class-ppcc-core.php:69
+msgid "PayPal Currency Converter PRO has been upgraded to version 4.0. Your settings have been migrated automatically. <a href=\"admin.php?page=ppcc_settings\">Review your settings</a>."
+msgstr ""
+
+#: includes/class-ppcc-core.php:76
+msgid "PayPal Currency Converter PRO requires the PHP cURL extension to be installed."
+msgstr ""
+
+#: includes/class-ppcc-core.php:96
+msgid "PayPal Currency Converter PRO may conflict with %s. Please deactivate it for proper functioning."
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:155
+msgid "Order currency converted from %1$s %2$s to %3$s %4$s with conversion rate %5$s"
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:176
+msgid "PayPal Currency Conversion"
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:187
+msgid "No currency conversion was applied to this order."
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:199
+msgid "Original Currency:"
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:203
+msgid "Original Total:"
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:207
+msgid "Conversion Rate:"
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:211
+msgid "Converted Currency:"
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:215
+msgid "Converted Total:"
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:237
+msgid "original"
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:258
+msgid "Currency Conversion Information"
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:286
+msgid "PPCC - Cart total paid with %1$s in converted currency: %2$s %3$s * %4$s %5$s/%6$s = %7$s %8$s"
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:313
+msgid "Order automatically completed - PPCC virtual product handling."
+msgstr ""
+
+#: includes/class-ppcc-order-converter.php:321
+msgid "Order automatically processed - PPCC standard product handling."
+msgstr ""
+
+#: paypalcc.php:49
+msgid "PayPal Currency Converter PRO requires WooCommerce to be active."
+msgstr ""
+
+#: paypalcc.php:56
+msgid "PayPal Currency Converter PRO: Core class not found. Plugin files may be corrupted or incomplete."
+msgstr ""
+
+#: paypalcc.php:79
+msgid "PayPal Currency Converter PRO requires WooCommerce to be active. Please activate WooCommerce first."
+msgstr ""
